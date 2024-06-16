@@ -5,6 +5,7 @@ import (
 	// middlewares "crypto-academy-backend/middleware"
 
 	"Ecojourney-backend/controller"
+	middlewares "Ecojourney-backend/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,9 +16,15 @@ func ConfigureRouter(router *gin.Engine) {
 	apis := router.Group("/api")
 
 	// Auth Endpoint
+	apis.POST("/register", controller.Register)
+	apis.POST("/login", controller.Login)
 
 	// Check Endpoint
 	apis.GET("/public", controller.PublicEndpoint)
-	apis.GET("/authenticated", controller.AuthenticatedEndpoint)
+
+	// Apply authentication middleware to protected routes
+	protected := router.Group("/protected")
+	protected.Use(middlewares.AuthMiddleware)
+	protected.GET("/authenticated", controller.AuthenticatedEndpoint)
 
 }
