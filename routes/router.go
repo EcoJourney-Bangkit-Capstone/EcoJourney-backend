@@ -11,20 +11,17 @@ import (
 )
 
 func ConfigureRouter(router *gin.Engine) {
-	// Main Endpoint
-	router.GET("/api", controller.MainController)
-	apis := router.Group("/api")
+	// Make sure every request should go from /api
+	api := router.Group("/api")
 
 	// Auth Endpoint
-	apis.POST("/register", controller.Register)
-	apis.POST("/login", controller.Login)
+	api.POST("/register", controller.Register)
+	api.POST("/login", controller.Login)
 
-	// Check Endpoint
-	apis.GET("/public", controller.PublicEndpoint)
+	// Public Endpoint
+	api.GET("/public", controller.PublicEndpoint)
 
-	// Apply authentication middleware to protected routes
-	protected := router.Group("/protected")
-	protected.Use(middlewares.AuthMiddleware)
-	protected.GET("/authenticated", controller.AuthenticatedEndpoint)
+	// Protected Endpoint
+	api.GET("/protected", middlewares.AuthMiddleware, controller.AuthenticatedEndpoint)
 
 }
