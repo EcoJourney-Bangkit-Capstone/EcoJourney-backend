@@ -2,11 +2,11 @@ package main
 
 import (
 	// Standard packages
-	"context"
+
 	"os"
 
 	// Local packages
-	config "Ecojourney-backend/config"
+
 	middlewares "Ecojourney-backend/middleware"
 	routes "Ecojourney-backend/routes"
 	utils "Ecojourney-backend/utils"
@@ -20,21 +20,15 @@ func init() {
 }
 
 func main() {
-	ctx := context.Background()
 	/*
 	* Initialize Client
 	 */
-	firebase, err := config.InitFirebaseApp(ctx)
-	if err != nil {
-		panic(err)
-	}
 
 	/**
 	 * Initialize Application
 	 */
 	app := gin.Default()
 	app.Use(middlewares.CorsMiddleware())
-	app.Use(middlewares.DBMiddleware(*firebase))
 
 	routes.ConfigureRouter(app)
 
