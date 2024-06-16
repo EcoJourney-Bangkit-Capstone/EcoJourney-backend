@@ -2,6 +2,7 @@ package main
 
 import (
 	// Standard packages
+	"context"
 	"os"
 
 	// Local packages
@@ -19,21 +20,21 @@ func init() {
 }
 
 func main() {
+	ctx := context.Background()
 	/*
-	* Initialize Firebase
+	* Initialize Client
 	 */
-	db, err := config.Connect()
+	firebase, err := config.InitFirebaseApp(ctx)
 	if err != nil {
 		panic(err)
 	}
-	defer os.Exit(0)
 
 	/**
-	 * Initialize Gin
+	 * Initialize Application
 	 */
 	app := gin.Default()
 	app.Use(middlewares.CorsMiddleware())
-	app.Use(middlewares.DBMiddleware(*db))
+	app.Use(middlewares.DBMiddleware(*firebase))
 
 	routes.ConfigureRouter(app)
 
