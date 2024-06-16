@@ -34,6 +34,9 @@ func init() {
 }
 
 func main() {
+	/**
+	 * Initialize Firebase instance
+	 */
 	if err := config.InitFirebase(); err != nil {
 		log.Fatalf("firebase initialization error: %v", err)
 	}
