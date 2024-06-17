@@ -22,7 +22,7 @@ func Register(c *gin.Context) {
 	// Hash the password using bcrypt
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, err.Error(), nil))
 		return
 	}
 
@@ -32,7 +32,7 @@ func Register(c *gin.Context) {
 
 	userRecord, err := config.AuthClient.CreateUser(c, params)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, err.Error(), nil))
 		return
 	}
 
@@ -43,30 +43,32 @@ func Register(c *gin.Context) {
 		"password": string(hashedPassword),
 	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to store user data"})
+		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, err.Error(), nil))
 		return
 	}
 
 	token, err := config.AuthClient.CustomToken(c, userRecord.UID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, err.Error(), nil))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"uid": userRecord.UID, "token": token})
+	c.JSON(http.StatusCreated, helper.GenerateResponse(false, "User registered successfully", gin.H{"token": token, "user": gin.H{
+		"uid": userRecord.UID,
+	}}))
 }
 
 func Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, helper.GenerateResponse(true, err.Error(), nil))
 		return
 	}
 
 	// Get user data from Firestore
 	doc, err := config.FirestoreClient.Collection("users").Where("email", "==", req.Email).Limit(1).Documents(c).Next()
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
+		c.JSON(http.StatusUnauthorized, helper.GenerateResponse(true, "Invalid email or password", nil))
 		return
 	}
 
@@ -75,16 +77,33 @@ func Login(c *gin.Context) {
 
 	// Verify the password using bcrypt
 	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(req.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
+		c.JSON(http.StatusUnauthorized, helper.GenerateResponse(true, "Invalid email or password", nil))
 		return
 	}
 
 	// token, err := config.AuthClient.CustomToken(c, doc.Ref.ID)
 	token, err := helper.ConvertCustomTokenToIDToken(req.Email, req.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, "Failed to generate token", nil))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	c.JSON(http.StatusOK, helper.GenerateResponse(false, "Successfully logged in", gin.H{"token": token, "user": gin.H{
+		"uid": doc.Ref.ID,
+	}}))
+}
+
+func Logout(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	if token == "" {
+		c.JSON(http.StatusBadRequest, helper.GenerateResponse(true, "Missing token", nil))
+		return
+	}
+
+	if err := config.AuthClient.RevokeRefreshTokens(c, token); err != nil {
+		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, "Failed to revoke token", nil))
+		return
+	}
+
+	c.JSON(http.StatusOK, helper.GenerateResponse(false, "Successfully logged out", nil))
 }
