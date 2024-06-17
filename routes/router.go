@@ -13,15 +13,18 @@ import (
 func ConfigureRouter(router *gin.Engine) {
 	// Make sure every request should go from /api
 	api := router.Group("/api")
+	{
+		// Auth Endpoint
+		auth := api.Group("/auth")
+		{
+			auth.POST("/register", controller.Register)
+			auth.POST("/login", controller.Login)
+		}
 
-	// Auth Endpoint
-	api.POST("/register", controller.Register)
-	api.POST("/login", controller.Login)
+		// Public Endpoint
+		api.GET("/public", controller.PublicEndpoint)
 
-	// Public Endpoint
-	api.GET("/public", controller.PublicEndpoint)
-
-	// Protected Endpoint
-	api.GET("/protected", middlewares.AuthMiddleware, controller.AuthenticatedEndpoint)
-
+		// Protected Endpoint
+		api.GET("/protected", middlewares.AuthMiddleware, controller.AuthenticatedEndpoint)
+	}
 }

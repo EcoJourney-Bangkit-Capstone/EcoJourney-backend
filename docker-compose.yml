@@ -1,0 +1,17 @@
+version: "3.8"
+services:
+  backend:
+    build: .
+    env_file:
+      - .env
+    container_name: ecojourney-backend
+    volumes:
+      - .:/app
+    ports:
+      - ${PORT}:${PORT}
+    networks:
+      - ecojourney
+
+networks:
+  ecojourney:
+    driver: bridge

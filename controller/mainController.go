@@ -16,7 +16,7 @@ func MainController(c *gin.Context) {
 func PublicEndpoint(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
-		"message": "This is a public endpoint",
+		"message": "This is a public 2.0 endpoint",
 	})
 }
 
