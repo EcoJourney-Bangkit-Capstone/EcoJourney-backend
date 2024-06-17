@@ -1,11 +1,11 @@
 package controller
 
 import (
+	"log"
 	"net/http"
 
 	"firebase.google.com/go/v4/auth"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 
 	"Ecojourney-backend/config"
 	"Ecojourney-backend/helper"
@@ -19,29 +19,12 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	// Hash the password using bcrypt
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, err.Error(), nil))
-		return
-	}
-
 	params := (&auth.UserToCreate{}).
 		Email(req.Email).
-		Password(req.Password)
+		Password(req.Password).
+		DisplayName(req.Username)
 
 	userRecord, err := config.AuthClient.CreateUser(c, params)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, err.Error(), nil))
-		return
-	}
-
-	// Store user information in Firestore
-	_, err = config.FirestoreClient.Collection("users").Doc(userRecord.UID).Set(c, map[string]interface{}{
-		"username": req.Username,
-		"email":    req.Email,
-		"password": string(hashedPassword),
-	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, err.Error(), nil))
 		return
@@ -65,45 +48,65 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// Get user data from Firestore
-	doc, err := config.FirestoreClient.Collection("users").Where("email", "==", req.Email).Limit(1).Documents(c).Next()
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, helper.GenerateResponse(true, "Invalid email or password", nil))
-		return
-	}
-
-	userData := doc.Data()
-	hashedPassword := userData["password"].(string)
-
-	// Verify the password using bcrypt
-	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(req.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, helper.GenerateResponse(true, "Invalid email or password", nil))
-		return
-	}
-
-	// token, err := config.AuthClient.CustomToken(c, doc.Ref.ID)
 	token, err := helper.ConvertCustomTokenToIDToken(req.Email, req.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, "Failed to generate token", nil))
+		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, err.Error(), nil))
 		return
 	}
 
-	c.JSON(http.StatusOK, helper.GenerateResponse(false, "Successfully logged in", gin.H{"token": token, "user": gin.H{
-		"uid": doc.Ref.ID,
-	}}))
+	c.JSON(http.StatusOK, helper.GenerateResponse(false, "Successfully logged in", gin.H{"token": token}))
 }
 
 func Logout(c *gin.Context) {
 	token := c.GetHeader("Authorization")
 	if token == "" {
-		c.JSON(http.StatusBadRequest, helper.GenerateResponse(true, "Missing token", nil))
+		c.JSON(http.StatusBadRequest, helper.GenerateResponse(true, "Authorization token is required", nil))
 		return
 	}
 
-	if err := config.AuthClient.RevokeRefreshTokens(c, token); err != nil {
-		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, "Failed to revoke token", nil))
+	// Remove bearer
+	token = token[7:]
+
+	if err := config.AuthClient.RevokeRefreshTokens(c, c.GetString("uid")); err != nil {
+		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, err.Error(), nil))
 		return
 	}
 
-	c.JSON(http.StatusOK, helper.GenerateResponse(false, "Successfully logged out", nil))
+	_, err := config.AuthClient.VerifyIDTokenAndCheckRevoked(c, token)
+	if err != nil {
+		if err.Error() == "ID token has been revoked" {
+			// Token is revoked. Change the existing uid token to invalid
+			user, err := config.AuthClient.GetUser(c, c.GetString("uid"))
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, err.Error(), nil))
+				return
+			}
+
+			c.JSON(http.StatusOK, helper.GenerateResponse(false, "Successfully logged out", gin.H{"user": gin.H{
+				"uid":      user.UID,
+				"email":    user.Email,
+				"username": user.DisplayName,
+			}}))
+
+		} else {
+			// Token is invalid
+			c.JSON(http.StatusBadRequest, helper.GenerateResponse(true, "Invalid token", nil))
+		}
+	}
+}
+
+func ForgotPassword(c *gin.Context) {
+	var req models.ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, helper.GenerateResponse(true, err.Error(), nil))
+		return
+	}
+
+	link, err := config.AuthClient.PasswordResetLinkWithSettings(c, req.Email, nil)
+	if err != nil {
+		log.Fatalf("error generating email link: %v\n", err)
+		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, err.Error(), nil))
+	}
+
+	c.JSON(http.StatusOK, helper.GenerateResponse(false, "Password reset link generated!", gin.H{"link": link}))
 }

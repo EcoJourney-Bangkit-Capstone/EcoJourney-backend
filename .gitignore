@@ -70,3 +70,4 @@ service-account.json
 
 # main build golang
 main
+private-key.rsa

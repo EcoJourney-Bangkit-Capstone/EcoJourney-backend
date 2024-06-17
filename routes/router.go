@@ -19,6 +19,14 @@ func ConfigureRouter(router *gin.Engine) {
 		{
 			auth.POST("/register", controller.Register)
 			auth.POST("/login", controller.Login)
+			auth.POST("/logout", middlewares.AuthMiddleware, controller.Logout)
+			auth.POST("/forgot-password", controller.ForgotPassword)
+		}
+
+		// User Endpoint
+		user := api.Group("/user")
+		{
+			user.GET("/self", middlewares.AuthMiddleware, controller.GetSelf)
 		}
 
 		// Public Endpoint

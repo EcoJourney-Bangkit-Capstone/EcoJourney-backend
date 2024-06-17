@@ -11,7 +11,7 @@ import (
 func AuthMiddleware(c *gin.Context) {
 	idToken := c.GetHeader("Authorization")
 	if idToken == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization token required"})
+		c.JSON(http.StatusUnauthorized, helper.GenerateResponse(true, "No token provided!", nil))
 		c.Abort()
 		return
 	}
@@ -22,7 +22,7 @@ func AuthMiddleware(c *gin.Context) {
 	// Verify the ID token
 	token, err := config.AuthClient.VerifyIDToken(c, idToken)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, helper.GenerateResponse(true, "Invalid token!", nil))
+		c.JSON(http.StatusUnauthorized, helper.GenerateResponse(true, err.Error(), nil))
 		c.Abort()
 		return
 	}

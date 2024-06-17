@@ -6,7 +6,7 @@ import "github.com/gin-gonic/gin"
 func GenerateResponse(err bool, message string, data any) gin.H {
 	return gin.H{
 		"error":   false,
-		"message": "",
-		"data":    nil,
+		"message": message,
+		"data":    data,
 	}
 }
