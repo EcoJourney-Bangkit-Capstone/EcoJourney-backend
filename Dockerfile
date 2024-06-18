@@ -10,6 +10,8 @@ FROM golang:latest
 WORKDIR /app
 COPY . .
 
+ENV HOST 0.0.0.0
+
 # Environment variables which CompileDaemon requires to run
 ENV PROJECT_DIR=/app \
     GO111MODULE=on \
