@@ -30,6 +30,12 @@ func ConfigureRouter(router *gin.Engine) {
 			user.POST("/update", middlewares.AuthMiddleware, controller.UpdateUser)
 		}
 
+		// Article Endpoint
+		articles := api.Group("/articles")
+		{
+			articles.POST("/create", middlewares.AuthMiddleware, controller.AddArticle)
+		}
+
 		// Public Endpoint
 		api.GET("/public", controller.PublicEndpoint)
 
