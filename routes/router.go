@@ -36,6 +36,7 @@ func ConfigureRouter(router *gin.Engine) {
 			articles.POST("/create", middlewares.AuthMiddleware, controller.AddArticle)
 			articles.DELETE("/:articleId", middlewares.AuthMiddleware, controller.DeleteArticle)
 			articles.PUT("/:articleId", middlewares.AuthMiddleware, controller.EditArticle)
+			articles.GET("", middlewares.AuthMiddleware, controller.GetArticles)
 		}
 
 		// Public Endpoint

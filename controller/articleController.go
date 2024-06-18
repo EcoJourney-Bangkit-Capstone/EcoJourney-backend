@@ -7,6 +7,7 @@ import (
 	"Ecojourney-backend/models"
 	"github.com/gin-gonic/gin"
 	"cloud.google.com/go/firestore" 
+	"google.golang.org/api/iterator"
 )
 
 func AddArticle(c *gin.Context) {
@@ -124,6 +125,36 @@ func EditArticle(c *gin.Context) {
 		"message": "Article updated successfully",
 		"details": gin.H{
 			"articleId": articleID,
+		},
+	})
+}
+
+
+func GetArticles(c *gin.Context) {
+	iter := config.FirestoreClient.Collection("articles").Documents(c)
+	var articles []models.ArticleResponse
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, err.Error(), nil))
+			return
+		}
+
+		var article models.ArticleResponse
+		doc.DataTo(&article)
+		article.ID = doc.Ref.ID
+		articles = append(articles, article)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"error":   false,
+		"message": "Articles retrieved successfully",
+		"details": gin.H{
+			"Total_count": len(articles),
+			"articles":    articles,
 		},
 	})
 }
