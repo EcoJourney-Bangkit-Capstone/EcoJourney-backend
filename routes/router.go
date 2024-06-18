@@ -39,6 +39,11 @@ func ConfigureRouter(router *gin.Engine) {
 			articles.GET("", middlewares.AuthMiddleware, controller.GetArticles)
 		}
 
+		// Waste Recognition Endpoint
+		api.POST("/waste-recognition", middlewares.AuthMiddleware, controller.WasteRecognitionHandler)
+		api.GET("/waste-recognition/history", middlewares.AuthMiddleware, controller.WasteRecognitionHistoryHandler)
+		
+
 		// Public Endpoint
 		api.GET("/public", controller.PublicEndpoint)
 

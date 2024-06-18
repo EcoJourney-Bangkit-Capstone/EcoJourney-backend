@@ -2,6 +2,10 @@ package controller
 
 import (
 	"net/http"
+	"path/filepath"
+	"time"
+	
+
 	"Ecojourney-backend/config"
 	"Ecojourney-backend/helper"
 	"Ecojourney-backend/models"
@@ -157,4 +161,83 @@ func GetArticles(c *gin.Context) {
 			"articles":    articles,
 		},
 	})
+}
+
+func WasteRecognitionHistoryHandler(c *gin.Context) {
+	uid := c.GetString("uid")
+	history, err := helper.GetWasteHistory(uid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, "Failed to retrieve history", nil))
+		return
+	}
+
+	response := gin.H{
+		"Total_item": len(history),
+		"history":    history,
+	}
+
+	c.JSON(http.StatusOK, helper.GenerateResponse(false, "History retrieved successfully", response))
+}
+
+func WasteRecognitionHandler(c *gin.Context) {
+	// Parse the form
+	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
+		c.JSON(http.StatusBadRequest, helper.GenerateResponse(true, "Unable to parse form", nil))
+		return
+	}
+
+	// Get the image file
+	imageFile, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, helper.GenerateResponse(true, "Invalid image format", nil))
+		return
+	}
+
+	image, err := imageFile.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, "Failed to open image", nil))
+		return
+	}
+	defer image.Close()
+
+	// Generate unique file name
+	fileName := time.Now().Format("20060102150405") + filepath.Ext(imageFile.Filename)
+	imageURL, err := config.UploadImageToGCS(image, fileName)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, "Failed to upload image", nil))
+		return
+	}
+
+	// Get the waste type
+	wasteType := c.PostForm("type")
+	if wasteType == "" {
+		c.JSON(http.StatusBadRequest, helper.GenerateResponse(true, "Waste type is required", nil))
+		return
+	}
+
+	// Fetch articles related to waste type
+	articles, err := helper.FetchArticlesByKeyword(wasteType)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, "Failed to fetch articles", nil))
+		return
+	}
+
+	// Get user ID from context
+	uid := c.GetString("uid")
+
+	// Store the history
+	historyId, err := helper.SaveHistory(uid, imageURL, wasteType, articles)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, "Failed to save history", nil))
+		return
+	}
+
+	// Create response
+	response := gin.H{
+		"image_url": imageURL,
+		"articles":  articles,
+		"historyId": historyId,
+	}
+
+	c.JSON(http.StatusOK, helper.GenerateResponse(false, "Image analyzed successfully", response))
 }
