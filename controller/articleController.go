@@ -2,8 +2,8 @@ package controller
 
 import (
 	"net/http"
-	"path/filepath"
-	"time"
+	// "path/filepath"
+	// "time"
 	
 
 	"Ecojourney-backend/config"
@@ -186,28 +186,6 @@ func WasteRecognitionHandler(c *gin.Context) {
 		return
 	}
 
-	// Get the image file
-	imageFile, err := c.FormFile("image")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, helper.GenerateResponse(true, "Invalid image format", nil))
-		return
-	}
-
-	image, err := imageFile.Open()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, "Failed to open image", nil))
-		return
-	}
-	defer image.Close()
-
-	// Generate unique file name
-	fileName := time.Now().Format("20060102150405") + filepath.Ext(imageFile.Filename)
-	imageURL, err := config.UploadImageToGCS(image, fileName)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, "Failed to upload image", nil))
-		return
-	}
-
 	// Get the waste type
 	wasteType := c.PostForm("type")
 	if wasteType == "" {
@@ -224,6 +202,9 @@ func WasteRecognitionHandler(c *gin.Context) {
 
 	// Get user ID from context
 	uid := c.GetString("uid")
+
+	// Here you can create a mock URL since we're skipping the upload step
+	imageURL := "mock_image_url"
 
 	// Store the history
 	historyId, err := helper.SaveHistory(uid, imageURL, wasteType, articles)
