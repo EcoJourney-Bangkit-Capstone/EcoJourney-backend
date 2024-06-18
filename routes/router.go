@@ -27,6 +27,7 @@ func ConfigureRouter(router *gin.Engine) {
 		user := api.Group("/user")
 		{
 			user.GET("/self", middlewares.AuthMiddleware, controller.GetSelf)
+			user.POST("/update", middlewares.AuthMiddleware, controller.UpdateUser)
 		}
 
 		// Public Endpoint
