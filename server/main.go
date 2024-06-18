@@ -11,7 +11,6 @@ import (
 	"Ecojourney-backend/config"
 	middlewares "Ecojourney-backend/middleware"
 	routes "Ecojourney-backend/routes"
-	utils "Ecojourney-backend/utils"
 
 	// Third-party packages
 
@@ -29,11 +28,8 @@ var (
 	storageClient   *storage.Client
 )
 
-func init() {
-	utils.LoadEnvVariables()
-}
-
 func main() {
+	// utils.LoadEnvVariables()
 	/**
 	 * Initialize Firebase instance
 	 */
@@ -54,5 +50,5 @@ func main() {
 		port = "8080"
 	}
 
-	app.Run(":" + port)
+	app.Run("0.0.0.0:" + port)
 }
