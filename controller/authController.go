@@ -26,7 +26,11 @@ func Register(c *gin.Context) {
 
 	userRecord, err := config.AuthClient.CreateUser(c, params)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, helper.GenerateResponse(true, err.Error(), nil))
+		if err.Error() == "INVALID_LOGIN_CREDENTIALS" {
+			c.JSON(http.StatusUnauthorized, helper.GenerateResponse(true, err.Error(), nil))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, err.Error(), nil))
 		return
 	}
 
