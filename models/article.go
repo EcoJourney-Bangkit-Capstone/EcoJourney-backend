@@ -18,3 +18,7 @@ type ArticleResponse struct {
 	ImgURL         string    `json:"img_url"`
 	Content        string    `json:"content"`
 }
+
+type ArticleSearchRequest struct {
+	Keyword             string    `json:"keyword"`
+}

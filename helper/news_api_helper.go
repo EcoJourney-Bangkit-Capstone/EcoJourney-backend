@@ -9,11 +9,11 @@ import (
 
 type Article struct {
 	ID           string   `json:"id"`
-	DatePublished string  `json:"date_published"`
-	Publisher    string   `json:"publisher"`
+	DatePublished string  `json:"publishedAt"`
+	Publisher    string   `json:"author"`
 	Title        string   `json:"title"`
 	Topic        []string `json:"topic"`
-	ImgURL       string   `json:"img_url"`
+	ImgURL       string   `json:"urlToImage"`
 	Content      string   `json:"content"`
 }
 
@@ -25,7 +25,8 @@ type NewsAPIResponse struct {
 
 func FetchArticlesByKeyword(keyword string) ([]Article, error) {
 	apiKey := os.Getenv("NEWS_API_KEY")
-	url := fmt.Sprintf("https://newsapi.org/v2/everything?q=%s&apiKey=%s", keyword, apiKey)
+	url := fmt.Sprintf("https://newsapi.org/v2/top-headlines?q=%s&category=health&apiKey=%s", keyword, apiKey)
+	// https://newsapi.org/v2/top-headlines?q=%s&category=health&environtment=en&apiKey=
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -42,5 +43,16 @@ func FetchArticlesByKeyword(keyword string) ([]Article, error) {
 		return nil, fmt.Errorf("failed to decode response: %v", err)
 	}
 
-	return newsResponse.Articles, nil
+	// Limit to first 10 articles
+	articles := newsResponse.Articles
+	if len(articles) > 10 {
+		articles = articles[:10]
+	}
+
+	// Assign IDs from 1 to 10
+	for i := 0; i < len(articles); i++ {
+		articles[i].ID = fmt.Sprintf("%d", i+1)
+	}
+
+	return articles, nil
 }

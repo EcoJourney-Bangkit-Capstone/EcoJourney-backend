@@ -3,8 +3,8 @@ package config
 import (
 	"context"
 	"fmt"
-	"io"
 	"mime/multipart"
+	"io"
 	"os"
 
 	"cloud.google.com/go/firestore"
@@ -53,17 +53,15 @@ func UploadImageToGCS(file multipart.File, fileName string) (string, error) {
 	ctx := context.Background()
 	bucketName := os.Getenv("GOOGLE_BUCKET_NAME")
 
-	bucket := StorageClient.Bucket(bucketName)
-	if bucket == nil {
-		return "", fmt.Errorf("bucket %s not found", bucketName)
-	}
+	fmt.Printf("Uploading image with fileName: %s\n", fileName)
+	fmt.Printf("Bucket Name: %s\n", bucketName)
 
-	wc := bucket.Object(fileName).NewWriter(ctx)
+	wc := StorageClient.Bucket(bucketName).Object(fileName).NewWriter(ctx)
 	if _, err := io.Copy(wc, file); err != nil {
-		return "", fmt.Errorf("failed to copy file to bucket: %v", err)
+		return "", err
 	}
 	if err := wc.Close(); err != nil {
-		return "", fmt.Errorf("failed to close writer: %v", err)
+		return "", fmt.Errorf("error closing writer: %v", err)
 	}
 
 	imageURL := fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, fileName)
