@@ -54,6 +54,11 @@ func Login(c *gin.Context) {
 
 	token, err := helper.ConvertCustomTokenToIDToken(req.Email, req.Password)
 	if err != nil {
+		if err.Error() == "INVALID_LOGIN_CREDENTIALS" {
+			c.JSON(http.StatusUnauthorized, helper.GenerateResponse(true, err.Error(), nil))
+			return
+		}
+
 		c.JSON(http.StatusInternalServerError, helper.GenerateResponse(true, err.Error(), nil))
 		return
 	}

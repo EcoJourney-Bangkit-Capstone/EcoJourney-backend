@@ -23,6 +23,6 @@ func PublicEndpoint(c *gin.Context) {
 func AuthenticatedEndpoint(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
-		"message": "This is an authenticated endpoint",
+		"message": "This is an authenticated 3.0 endpoint",
 	})
 }
