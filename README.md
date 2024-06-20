@@ -76,5 +76,5 @@ go run main.go
 # API endpoint
 Technical document spesification dapat anda lihat melalui tautan berikut:
 ```bash
-ristek.link/technical-spesification-documentristek.link/technical-spesification-document
+ristek.link/technical-spesification-document
 ```
