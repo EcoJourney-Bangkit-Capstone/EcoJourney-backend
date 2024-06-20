@@ -28,7 +28,23 @@ func ConfigureRouter(router *gin.Engine) {
 		{
 			user.GET("/self", middlewares.AuthMiddleware, controller.GetSelf)
 			user.POST("/update", middlewares.AuthMiddleware, controller.UpdateUser)
+			user.POST("/upload", middlewares.AuthMiddleware, controller.UploadUserProfilePicture)
 		}
+
+		// Article Endpoint
+		articles := api.Group("/articles")
+		{
+			articles.POST("/search", controller.SearchArticlesHandler)
+			articles.POST("/create", middlewares.AuthMiddleware, controller.AddArticle)
+			articles.DELETE("/:articleId", middlewares.AuthMiddleware, controller.DeleteArticle)
+			articles.PUT("/:articleId", middlewares.AuthMiddleware, controller.EditArticle)
+			articles.GET("", middlewares.AuthMiddleware, controller.GetArticles)
+		}
+
+		// Waste Recognition Endpoint
+		api.POST("/waste-recognition", middlewares.AuthMiddleware, controller.WasteRecognitionHandler)
+		api.GET("/waste-recognition/history", middlewares.AuthMiddleware, controller.WasteHistoryHandler)
+		
 
 		// Public Endpoint
 		api.GET("/public", controller.PublicEndpoint)
